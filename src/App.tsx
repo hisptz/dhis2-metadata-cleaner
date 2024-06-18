@@ -1,94 +1,100 @@
 import i18n from "@dhis2/d2-i18n";
+import React, { useState, useEffect } from 'react'
+import { useDataQuery } from '@dhis2/app-runtime'
 import classes from "./App.module.css";
-import { useDataQuery } from "@dhis2/app-runtime";
 import { Button, CircularLoader } from '@dhis2/ui';
-import React, { useState } from 'react';
 
-
-const query = {
-	me: {
-		resource: "me"
-	}
-};
-
-
-const SidebarData = [
-    {
-        title:"Metadata Assesment",
-        link:"/home"
+const myQuery = {
+    results: {
+        resource: 'programs',
+        params: {
+            pageSize: 50,
+            fields: ['id', 'displayName'],
+        },
     },
-    {
-        title:"Documentation",
-        link:"/Documentation"
-    }
-]
-
-function Sidebar() {
-    return (
-<div className={classes.Sidebar}>
-    <ul>
-    {SidebarData.map((val, key)=>{
-    return(
-        <li key={key}
-        onClick={()=>{
-            window.location.pathname=val.link}}
-        >
-        <div>{val.title}</div>
-        </li>
-    );
-})}
-    </ul>
-    </div>
-    );
 }
 
-
 const MyApp = () => {
-    const [loading, setLoading] = useState(false);
-    const [reportGenerated, setReportGenerated] = useState(false);
+    const [fetchData, setFetchData] = useState(false)
+    const [sidebarOpen, setSidebarOpen] = useState(true)
+    const [activeLink, setActiveLink] = useState('home')
+    const { loading, error, data, refetch } = useDataQuery(myQuery, {
+        lazy: true,
+    })
 
-    const handleButtonClick = () => {
-        setLoading(true);
-        // Add your logic here for what should happen when "Check Integrity" is clicked
+    useEffect(() => {
+        if (fetchData) {
+            refetch()
+        }
+    }, [fetchData, refetch])
 
-        // Simulate a loading process, for example, fetching data
-        setTimeout(() => {
-            setLoading(false);
-            setReportGenerated(true);
-        }, 3000); // 3 seconds delay
-    };
+    const handleFetchClick = () => {
+        setFetchData(true)
+    }
+
+    const handleSidebarToggle = () => {
+        setSidebarOpen(!sidebarOpen)
+    }
+
+    const handleLinkClick = (link) => {
+        setActiveLink(link)
+    }
+
+    if (error) {
+        return <span>ERROR: {error.message}</span>
+    }
 
     return (
-        <>
-         <div className={classes.Sidebar}>
-        {/* <ul>
-         <li><a href="/">Metadata Assessment</a></li>
-        <li><a href="/documentation">Documentation</a></li>
-        </ul> */}
-        <Sidebar/>
-    </div>
-        <div className={classes.home}>
-            
-             {!loading && !reportGenerated && (
-                <>
-                    <h1>Click the button below to generate Metadata Assessment Report</h1>
-                    <Button primary onClick={handleButtonClick} >Check Integrity</Button>
-                </>
-            )}
-            {loading && (
-                <>
-                    <h1>Generating report...</h1>
-                    <CircularLoader large />
-                </>
-            )}
-            {!loading && reportGenerated && (
-                <h1 style={{ color: 'green' }}>Report generated successfully!</h1>
-            )}
+        <div className={classes.appContainer}>
+            <div className={`${classes.sidebar} ${sidebarOpen ? classes.open : classes.closed}`}>
+                <button onClick={handleSidebarToggle} className={classes.toggleButton}>
+                    {sidebarOpen ? '<' : '>'}
+                </button>
+                <ul className={classes.sidebarList}>
+                    <li 
+                        className={activeLink === 'Metadata Assessment' ? classes.active : ''} 
+                        onClick={() => handleLinkClick('Metadata Assessment')}
+                    >
+                        Metadata Assessment
+                    </li>
+                    <li 
+                        className={activeLink === 'documentation' ? classes.active : ''} 
+                        onClick={() => handleLinkClick('documentation')}
+                    >
+                        Documentation
+                    </li>
+                    {/* Add more sidebar items as needed */}
+                </ul>
+            </div>
+            <div className={classes.content}>
+                {!fetchData ? (
+                    <div>
+                        <h1>Click the button below to generate Metadata Assessment Report</h1>
+                        <Button primary onClick={handleFetchClick}>Check Integrity</Button>
+                    </div>
+                ) : (
+                    <>
+                        {loading && (
+                            <>
+                                <h1>Generating report...</h1>
+                                <CircularLoader large />
+                            </>
+                        )}
+                        {data && (
+                            <div>
+                                <h1>Programs</h1>
+                                <ul>
+                                    {data.results.programs.map((prog) => (
+                                        <li key={prog.id}>{prog.displayName}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                        )}
+                    </>
+                )}
+            </div>
         </div>
-         </>
-             
-    );
-};
+    )
+}
 
-export default MyApp;
-
+export default MyApp
