@@ -1,8 +1,10 @@
-import i18n from "@dhis2/d2-i18n";
 import React, { useState, useEffect } from 'react'
 import { useDataQuery } from '@dhis2/app-runtime'
-import classes from "./App.module.css";
-import { Button, CircularLoader } from '@dhis2/ui';
+import { BrowserRouter as Router, Route, Routes, Link } from 'react-router-dom'
+import Documentation from './Documentation'
+import Help from './Help'
+import classes from "./App.module.css"
+import { Button, CircularLoader } from '@dhis2/ui'
 
 const myQuery = {
     results: {
@@ -45,55 +47,64 @@ const MyApp = () => {
     }
 
     return (
-        <div className={classes.appContainer}>
-            <div className={`${classes.sidebar} ${sidebarOpen ? classes.open : classes.closed}`}>
-                <button onClick={handleSidebarToggle} className={classes.toggleButton}>
-                    {sidebarOpen ? '<' : '>'}
-                </button>
-                <ul className={classes.sidebarList}>
-                    <li 
-                        className={activeLink === 'Metadata Assessment' ? classes.active : ''} 
-                        onClick={() => handleLinkClick('Metadata Assessment')}
-                    >
-                        Metadata Assessment
-                    </li>
-                    <li 
-                        className={activeLink === 'documentation' ? classes.active : ''} 
-                        onClick={() => handleLinkClick('documentation')}
-                    >
-                        Documentation
-                    </li>
-                    {/* Add more sidebar items as needed */}
-                </ul>
+        <Router>
+            <div className={classes.appContainer}>
+                <div className={`${classes.sidebar} ${sidebarOpen ? classes.open : classes.closed}`}>
+                    <button onClick={handleSidebarToggle} className={classes.toggleButton}>
+                        {sidebarOpen ? '<' : '>'}
+                    </button>
+                    <ul className={classes.sidebarList}>
+                        <li 
+                            className={activeLink === 'home' ? classes.active : ''} 
+                            onClick={() => handleLinkClick('home')}
+                        >
+                            <Link to="/">Metadata Assessment</Link>
+                        </li>
+                        <li 
+                            className={activeLink === 'documents' ? classes.active : ''} 
+                            onClick={() => handleLinkClick('documents')}
+                        >
+                            <Link to="/documentation">Documentation</Link>
+                        </li>
+                        {/* Add more sidebar items as needed */}
+                    </ul>
+                </div>
+                <div className={classes.content}>
+                    <Routes>
+                        <Route path="/" element={
+                            !fetchData ? (
+                                <div>
+                                    <h2>Welcome</h2>
+                                    <h1>Click the button below to generate Metadata Assessment Report</h1>
+                                    <Button primary onClick={handleFetchClick}>Check Integrity</Button>
+                                </div>
+                            ) : (
+                                <>
+                                    {loading && (
+                                        <>
+                                            <h1>Generating report...</h1>
+                                            <CircularLoader large />
+                                        </>
+                                    )}
+                                    {data && (
+                                        <div>
+                                            <h1>Programs</h1>
+                                            <ul>
+                                                {data.results.programs.map((prog) => (
+                                                    <li key={prog.id}>{prog.displayName}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </>
+                            )
+                        } />
+                        <Route path="/documentation" element={<Documentation />} />
+                        <Route path="/help" element={<Help/>} />
+                    </Routes>
+                </div>
             </div>
-            <div className={classes.content}>
-                {!fetchData ? (
-                    <div>
-                        <h1>Click the button below to generate Metadata Assessment Report</h1>
-                        <Button primary onClick={handleFetchClick}>Check Integrity</Button>
-                    </div>
-                ) : (
-                    <>
-                        {loading && (
-                            <>
-                                <h1>Generating report...</h1>
-                                <CircularLoader large />
-                            </>
-                        )}
-                        {data && (
-                            <div>
-                                <h1>Programs</h1>
-                                <ul>
-                                    {data.results.programs.map((prog) => (
-                                        <li key={prog.id}>{prog.displayName}</li>
-                                    ))}
-                                </ul>
-                            </div>
-                        )}
-                    </>
-                )}
-            </div>
-        </div>
+        </Router>
     )
 }
 
